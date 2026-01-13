@@ -3,11 +3,11 @@
 Encrypted DM pipe for Nostr using NIP-17 + NIP-44. Unix-style CLI for private messaging.
 
 ```bash
-# Send encrypted DM
-echo "secret message" | whisper send --to npub1... --relay wss://relay.damus.io
+# Send encrypted DM (using keep vault)
+echo "secret message" | whisper send --to npub1... --keep-key main --relay wss://relay.damus.io
 
 # Receive encrypted DMs
-whisper recv --relay wss://relay.damus.io
+whisper recv --keep-key main --relay wss://relay.damus.io
 ```
 
 ## Install
@@ -42,40 +42,39 @@ make
 make
 ```
 
-### 3. Set Up Your Key (Secure)
+### 3. Set Up Your Key
 
+**Option A: Use keep (recommended)**
 ```bash
-# Create secure key directory
-mkdir -p ~/.config/whisper
-chmod 700 ~/.config/whisper
+# Install keep: https://github.com/privkeyio/keep
+keep init
+keep generate --name main
+```
 
-# Store your nsec (get from your Nostr client)
-echo "nsec1your_private_key_here" > ~/.config/whisper/nsec
-chmod 600 ~/.config/whisper/nsec
+**Option B: Manual key file**
+```bash
+mkdir -p ~/.config/whisper && chmod 700 ~/.config/whisper
+echo "nsec1..." > ~/.config/whisper/nsec && chmod 600 ~/.config/whisper/nsec
 ```
 
 ### 4. Send a Message
 
 ```bash
-# Using key file (most secure - no shell history)
-echo "hey!" | ./whisper.sh send \
-  --to npub1recipient... \
-  --nsec-file ~/.config/whisper/nsec \
-  --relay wss://relay.damus.io
+# Using keep vault (recommended)
+echo "hey!" | whisper send --to npub1... --keep-key main --relay wss://relay.damus.io
 
-# Using environment variable
-export NOSTR_NSEC=nsec1...
-echo "hey!" | ./whisper.sh send --to npub1... --relay wss://relay.damus.io
+# Using key file
+echo "hey!" | whisper send --to npub1... --nsec-file ~/.config/whisper/nsec --relay wss://relay.damus.io
 ```
 
 ### 5. Receive Messages
 
 ```bash
 # Stream incoming DMs
-./whisper.sh recv --nsec-file ~/.config/whisper/nsec --relay wss://relay.damus.io
+whisper recv --keep-key main --relay wss://relay.damus.io
 
 # Get last 10 messages as JSON
-./whisper.sh recv --nsec-file ~/.config/whisper/nsec --relay wss://relay.damus.io --limit 10 --json
+whisper recv --keep-key main --relay wss://relay.damus.io --limit 10 --json
 ```
 
 ## Usage
@@ -88,9 +87,10 @@ Usage:
   whisper recv --relay <url> [key options]
 
 Key options (in order of priority):
-  --nsec-file <path>    Read key from file (most secure)
+  --keep-key <name>     Use key from keep vault (recommended)
+  --nsec-file <path>    Read key from file
   --nsec <nsec|hex>     Key as argument (visible in history)
-  NOSTR_NSEC env var    Fallback if no --nsec option
+  NOSTR_NSEC env var    Fallback if no key option
 
 Send options:
   --to <npub|hex>       Recipient public key
@@ -109,8 +109,8 @@ Recv options:
 ## Security
 
 **Key Protection:**
-- Use `--nsec-file` to avoid keys in shell history
-- Set file permissions: `chmod 600 ~/.config/whisper/nsec`
+- Use `--keep-key` with [keep](https://github.com/privkeyio/keep) vault (recommended)
+- Or `--nsec-file` to avoid keys in shell history
 - Keys are wiped from memory using `secure_wipe()` before exit
 - Environment variable `NOSTR_NSEC` as fallback (visible to child processes)
 
@@ -135,20 +135,24 @@ Messages are encrypted and wrapped so relays cannot read content or see the real
 ## Examples
 
 ```bash
-# Send secret to a friend
+# Send secret to a friend (using keep vault)
 echo "meet at the usual spot, 9pm" | whisper send \
   --to npub1friend... \
-  --nsec-file ~/.config/whisper/nsec \
+  --keep-key main \
   --relay wss://relay.damus.io
 
 # Pipe from another command
-cat secret.txt | whisper send --to npub1... --relay wss://relay.damus.io
+cat secret.txt | whisper send --to npub1... --keep-key main --relay wss://relay.damus.io
 
 # Monitor inbox continuously
-whisper recv --relay wss://relay.damus.io | tee inbox.log
+whisper recv --keep-key main --relay wss://relay.damus.io | tee inbox.log
 
 # Export messages as JSON for processing
-whisper recv --relay wss://relay.damus.io --limit 100 --json > messages.json
+whisper recv --keep-key main --relay wss://relay.damus.io --limit 100 --json > messages.json
+
+# Without keep (using env var)
+export NOSTR_NSEC=nsec1...
+echo "hello" | whisper send --to npub1... --relay wss://relay.damus.io
 ```
 
 ## Building from Source
