@@ -1,0 +1,10 @@
+# Build artifacts
+*.o
+whisper
+result
+
+# Editor
+*.swp
+*~
+.vscode/
+.idea/
