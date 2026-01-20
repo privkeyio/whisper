@@ -163,24 +163,16 @@ int whisper_send(const whisper_send_config* config) {
         wait_sec++;
     }
 
-    if (g_published) {
-        /* Print event ID */
-        char id_hex[65];
-        for (int i = 0; i < 32; i++) {
-            sprintf(&id_hex[i * 2], "%02x", dm->id[i]);
-        }
-        id_hex[64] = '\0';
-        printf("%s\n", id_hex);
-    } else {
+    if (!g_published) {
         fprintf(stderr, "Warning: No confirmation received (message may still be delivered)\n");
-        /* Still print event ID */
-        char id_hex[65];
-        for (int i = 0; i < 32; i++) {
-            sprintf(&id_hex[i * 2], "%02x", dm->id[i]);
-        }
-        id_hex[64] = '\0';
-        printf("%s\n", id_hex);
     }
+
+    char id_hex[65];
+    for (int i = 0; i < 32; i++) {
+        sprintf(&id_hex[i * 2], "%02x", dm->id[i]);
+    }
+    id_hex[64] = '\0';
+    printf("%s\n", id_hex);
 
 cleanup:
     /* Secure wipe private key */
