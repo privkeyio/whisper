@@ -37,7 +37,7 @@ endif
 SSL_LIBS := $(shell pkg-config --libs openssl 2>/dev/null || echo "-lssl -lcrypto")
 
 # noscrypt local path (if not in system)
-NOSCRYPT_LOCAL = ../noscrypt/build/libnoscrypt.so
+NOSCRYPT_LOCAL = ../noscrypt/build/libnoscrypt.a
 NOSCRYPT_INC = ../noscrypt/include
 
 # Combine flags

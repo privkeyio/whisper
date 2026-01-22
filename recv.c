@@ -56,18 +56,16 @@ static void message_cb(const char* message_type, const char* data, void* user_da
 static void event_cb(const nostr_event* event, void* user_data) {
     recv_context* ctx = (recv_context*)user_data;
 
-    /* Only process gift wrap events (kind 1059) */
     if (event->kind != 1059) {
         return;
     }
 
-    /* Unwrap the DM */
     nostr_event* rumor = NULL;
     nostr_key sender_pubkey;
     nostr_error_t err = nostr_nip17_unwrap_dm(event, &ctx->privkey, &rumor, &sender_pubkey);
 
     if (err != NOSTR_OK) {
-        /* Silently skip - might be a DM for someone else or corrupted */
+        fprintf(stderr, "[recv] Unwrap failed: %s\n", nostr_error_string(err));
         return;
     }
 
