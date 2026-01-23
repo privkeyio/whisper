@@ -169,9 +169,8 @@ int whisper_send(const whisper_send_config* config) {
 
     char id_hex[65];
     for (int i = 0; i < 32; i++) {
-        sprintf(&id_hex[i * 2], "%02x", dm->id[i]);
+        snprintf(&id_hex[i * 2], 3, "%02x", dm->id[i]);
     }
-    id_hex[64] = '\0';
     printf("%s\n", id_hex);
 
 cleanup:

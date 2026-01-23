@@ -3,6 +3,9 @@
 whisper
 result
 
+# Secrets
+.env
+
 # Editor
 *.swp
 *~
