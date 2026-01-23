@@ -65,7 +65,6 @@ static void event_cb(const nostr_event* event, void* user_data) {
     nostr_error_t err = nostr_nip17_unwrap_dm(event, &ctx->privkey, &rumor, &sender_pubkey);
 
     if (err != NOSTR_OK) {
-        fprintf(stderr, "[recv] Unwrap failed: %s\n", nostr_error_string(err));
         return;
     }
 
