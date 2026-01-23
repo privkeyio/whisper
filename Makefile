@@ -83,18 +83,12 @@ check-deps:
 	fi
 	@if [ -f "$(NOSCRYPT_LOCAL)" ] && [ ! -f "$(NOSCRYPT_MONOCYPHER)" ]; then \
 		echo "Error: libmonocypher.a not found at $(NOSCRYPT_MONOCYPHER)"; \
-		echo "       but libnoscrypt_static.a exists at $(NOSCRYPT_LOCAL)"; \
-		echo ""; \
-		echo "Rebuild noscrypt with monocypher:"; \
-		echo "  cd ../noscrypt/build && cmake .. && make"; \
+		echo "Rebuild noscrypt: cd ../noscrypt/build && cmake .. && make"; \
 		exit 1; \
 	fi
 	@if [ ! -f "$(NOSCRYPT_LOCAL)" ] && [ -f "$(NOSCRYPT_MONOCYPHER)" ]; then \
 		echo "Error: libnoscrypt_static.a not found at $(NOSCRYPT_LOCAL)"; \
-		echo "       but libmonocypher.a exists at $(NOSCRYPT_MONOCYPHER)"; \
-		echo ""; \
-		echo "Rebuild noscrypt:"; \
-		echo "  cd ../noscrypt/build && cmake .. && make"; \
+		echo "Rebuild noscrypt: cd ../noscrypt/build && cmake .. && make"; \
 		exit 1; \
 	fi
 
