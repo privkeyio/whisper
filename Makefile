@@ -43,7 +43,13 @@ NOSCRYPT_INC = ../noscrypt/include
 
 # Combine flags
 CFLAGS += $(addprefix -I,$(LIBNOSTR_INC)) $(PKG_CFLAGS) $(NOSCRYPT_CFLAGS) $(WS_CFLAGS)
-ifneq (,$(wildcard $(NOSCRYPT_LOCAL)))
+
+# Use local noscrypt static libs only if both exist
+NOSCRYPT_LOCAL_EXISTS := $(wildcard $(NOSCRYPT_LOCAL))
+NOSCRYPT_MONOCYPHER_EXISTS := $(wildcard $(NOSCRYPT_MONOCYPHER))
+USE_LOCAL_NOSCRYPT := $(and $(NOSCRYPT_LOCAL_EXISTS),$(NOSCRYPT_MONOCYPHER_EXISTS))
+
+ifneq (,$(USE_LOCAL_NOSCRYPT))
 CFLAGS += -I$(NOSCRYPT_INC)
 LIBS = $(LIBNOSTR_LIB) $(NOSCRYPT_LOCAL) $(NOSCRYPT_MONOCYPHER) $(PKG_LIBS) $(WS_LIBS) $(SSL_LIBS) -lpthread -lm
 else
@@ -73,6 +79,22 @@ check-deps:
 		echo "  cd $(LIBNOSTR_DIR)/build"; \
 		echo "  cmake .. -DNOSTR_FEATURE_NIP17=ON -DNOSTR_FEATURE_RELAY=ON"; \
 		echo "  make"; \
+		exit 1; \
+	fi
+	@if [ -f "$(NOSCRYPT_LOCAL)" ] && [ ! -f "$(NOSCRYPT_MONOCYPHER)" ]; then \
+		echo "Error: libmonocypher.a not found at $(NOSCRYPT_MONOCYPHER)"; \
+		echo "       but libnoscrypt_static.a exists at $(NOSCRYPT_LOCAL)"; \
+		echo ""; \
+		echo "Rebuild noscrypt with monocypher:"; \
+		echo "  cd ../noscrypt/build && cmake .. && make"; \
+		exit 1; \
+	fi
+	@if [ ! -f "$(NOSCRYPT_LOCAL)" ] && [ -f "$(NOSCRYPT_MONOCYPHER)" ]; then \
+		echo "Error: libnoscrypt_static.a not found at $(NOSCRYPT_LOCAL)"; \
+		echo "       but libmonocypher.a exists at $(NOSCRYPT_MONOCYPHER)"; \
+		echo ""; \
+		echo "Rebuild noscrypt:"; \
+		echo "  cd ../noscrypt/build && cmake .. && make"; \
 		exit 1; \
 	fi
 
