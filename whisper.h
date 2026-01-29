@@ -59,4 +59,7 @@ int whisper_load_privkey(const char* nsec_str, const char* nsec_file,
 /* Utility: parse pubkey from npub or hex */
 int whisper_parse_pubkey(const char* pubkey_str, nostr_key* pubkey);
 
+/* Utility: strip control characters from string (returns malloc'd copy) */
+char* whisper_strip_control_chars(const char* input);
+
 #endif /* WHISPER_H */

@@ -16,16 +16,16 @@
 
 #define MAX_MESSAGE_SIZE (64 * 1024)  /* 64KB max message */
 
-static volatile int g_published = 0;
-static volatile int g_connected = 0;
+static volatile sig_atomic_t g_published = 0;
+static volatile sig_atomic_t g_connected = 0;
 
 static void relay_state_cb(nostr_relay* relay, nostr_relay_state state, void* user_data) {
     (void)relay;
     (void)user_data;
-    if (state == NOSTR_RELAY_CONNECTED) {
-        g_connected = 1;
-    } else if (state == NOSTR_RELAY_ERROR) {
-        g_connected = -1;
+    switch (state) {
+        case NOSTR_RELAY_CONNECTED: g_connected = 1; break;
+        case NOSTR_RELAY_ERROR:     g_connected = -1; break;
+        default: break;
     }
 }
 

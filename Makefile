@@ -33,6 +33,24 @@ ifeq ($(WS_LIBS),)
 WS_LIBS = -lcwebsocket -lssl -lcrypto
 endif
 
+# Notcurses for TUI (optional)
+NOTCURSES_CFLAGS := $(shell pkg-config --cflags notcurses-core 2>/dev/null)
+NOTCURSES_LIBS := $(shell pkg-config --libs notcurses-core 2>/dev/null)
+
+# Fall back to local notcurses if not in system
+NOTCURSES_LOCAL = ../notcurses/build/libnotcurses-core.a
+NOTCURSES_LOCAL_INC = ../notcurses/include
+NOTCURSES_LOCAL_EXISTS := $(wildcard $(NOTCURSES_LOCAL))
+
+ifeq ($(NOTCURSES_LIBS),)
+ifneq ($(NOTCURSES_LOCAL_EXISTS),)
+NOTCURSES_CFLAGS = -I$(NOTCURSES_LOCAL_INC) -DHAVE_NOTCURSES
+NOTCURSES_LIBS = $(NOTCURSES_LOCAL) -lunistring -lz -ltinfo
+endif
+else
+NOTCURSES_CFLAGS += -DHAVE_NOTCURSES
+endif
+
 # OpenSSL (required by noscrypt/nip44)
 SSL_LIBS := $(shell pkg-config --libs openssl 2>/dev/null || echo "-lssl -lcrypto")
 
@@ -42,7 +60,7 @@ NOSCRYPT_MONOCYPHER = ../noscrypt/build/libmonocypher.a
 NOSCRYPT_INC = ../noscrypt/include
 
 # Combine flags
-CFLAGS += $(addprefix -I,$(LIBNOSTR_INC)) $(PKG_CFLAGS) $(NOSCRYPT_CFLAGS) $(WS_CFLAGS)
+CFLAGS += $(addprefix -I,$(LIBNOSTR_INC)) $(PKG_CFLAGS) $(NOSCRYPT_CFLAGS) $(WS_CFLAGS) $(NOTCURSES_CFLAGS)
 
 # Use local noscrypt static libs only if both exist
 NOSCRYPT_LOCAL_EXISTS := $(wildcard $(NOSCRYPT_LOCAL))
@@ -51,13 +69,13 @@ USE_LOCAL_NOSCRYPT := $(and $(NOSCRYPT_LOCAL_EXISTS),$(NOSCRYPT_MONOCYPHER_EXIST
 
 ifneq (,$(USE_LOCAL_NOSCRYPT))
 CFLAGS += -I$(NOSCRYPT_INC)
-LIBS = $(LIBNOSTR_LIB) $(NOSCRYPT_LOCAL) $(NOSCRYPT_MONOCYPHER) $(PKG_LIBS) $(WS_LIBS) $(SSL_LIBS) -lpthread -lm
+LIBS = $(LIBNOSTR_LIB) $(NOSCRYPT_LOCAL) $(NOSCRYPT_MONOCYPHER) $(PKG_LIBS) $(WS_LIBS) $(NOTCURSES_LIBS) $(SSL_LIBS) -lpthread -lm
 else
-LIBS = $(LIBNOSTR_LIB) $(PKG_LIBS) $(NOSCRYPT_LIBS) $(WS_LIBS) $(SSL_LIBS) -lpthread -lm
+LIBS = $(LIBNOSTR_LIB) $(PKG_LIBS) $(NOSCRYPT_LIBS) $(WS_LIBS) $(NOTCURSES_LIBS) $(SSL_LIBS) -lpthread -lm
 endif
 
 # Source files
-SRCS = main.c send.c recv.c util.c
+SRCS = main.c send.c recv.c util.c tui.c
 OBJS = $(SRCS:.c=.o)
 TARGET = whisper
 
@@ -68,7 +86,7 @@ all: check-deps $(TARGET)
 $(TARGET): $(OBJS)
 	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
 
-%.o: %.c whisper.h
+%.o: %.c whisper.h tui.h
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 check-deps:
@@ -104,3 +122,6 @@ run-send: $(TARGET)
 
 run-recv: $(TARGET)
 	./$(TARGET) recv --nsec nsec1test --relay wss://relay.damus.io --limit 5
+
+run-tui: $(TARGET)
+	./$(TARGET) tui --relay wss://relay.damus.io

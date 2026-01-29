@@ -15,8 +15,8 @@
 #endif
 #include "whisper.h"
 
-static volatile int g_running = 1;
-static volatile int g_connected = 0;
+static volatile sig_atomic_t g_running = 1;
+static volatile sig_atomic_t g_connected = 0;
 static int g_message_count = 0;
 
 /* Recv context passed to callbacks */
@@ -35,12 +35,11 @@ static void signal_handler(int sig) {
 static void relay_state_cb(nostr_relay* relay, nostr_relay_state state, void* user_data) {
     (void)relay;
     (void)user_data;
-    if (state == NOSTR_RELAY_CONNECTED) {
-        g_connected = 1;
-    } else if (state == NOSTR_RELAY_ERROR) {
-        g_connected = -1;
-    } else if (state == NOSTR_RELAY_DISCONNECTED) {
-        g_running = 0;
+    switch (state) {
+        case NOSTR_RELAY_CONNECTED:    g_connected = 1; break;
+        case NOSTR_RELAY_ERROR:        g_connected = -1; break;
+        case NOSTR_RELAY_DISCONNECTED: g_running = 0; break;
+        default: break;
     }
 }
 
@@ -101,16 +100,23 @@ static void event_cb(const nostr_event* event, void* user_data) {
 
         /* Format timestamp */
         time_t ts = (time_t)rumor->created_at;
-        struct tm* tm_info = localtime(&ts);
+        struct tm tm_buf;
+        struct tm* tm_info = localtime_r(&ts, &tm_buf);
         char time_str[32];
-        strftime(time_str, sizeof(time_str), "%Y-%m-%d %H:%M", tm_info);
+        if (tm_info) {
+            strftime(time_str, sizeof(time_str), "%Y-%m-%d %H:%M", tm_info);
+        } else {
+            snprintf(time_str, sizeof(time_str), "(invalid time)");
+        }
 
         /* Truncate npub for display */
         char short_npub[16];
         snprintf(short_npub, sizeof(short_npub), "%.12s...", sender_npub);
 
-        const char* content = rumor->content ? rumor->content : "(empty)";
-        printf("%s %s %s\n", time_str, short_npub, content);
+        const char* raw_content = rumor->content ? rumor->content : "(empty)";
+        char* content = whisper_strip_control_chars(raw_content);
+        printf("%s %s %s\n", time_str, short_npub, content ? content : "(empty)");
+        free(content);
     }
 
     fflush(stdout);
@@ -128,8 +134,17 @@ int whisper_recv(const whisper_recv_config* config) {
     nostr_relay* relay = NULL;
 
     /* Set up signal handler for clean shutdown */
+#ifndef _WIN32
+    struct sigaction sa = {0};
+    sa.sa_handler = signal_handler;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = 0;
+    sigaction(SIGINT, &sa, NULL);
+    sigaction(SIGTERM, &sa, NULL);
+#else
     signal(SIGINT, signal_handler);
     signal(SIGTERM, signal_handler);
+#endif
 
     /* Initialize libnostr */
     if (nostr_init() != NOSTR_OK) {

@@ -5,10 +5,23 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifndef _WIN32
+#include <sys/stat.h>
+#endif
 #include "whisper.h"
 
 /* Load private key from file, trimming whitespace */
 static char* read_key_file(const char* path) {
+#ifndef _WIN32
+    struct stat st;
+    if (stat(path, &st) != 0) return NULL;
+
+    if ((st.st_mode & 077) != 0) {
+        fprintf(stderr, "Warning: Key file '%s' has insecure permissions\n", path);
+        fprintf(stderr, "  Recommended: chmod 600 %s\n", path);
+    }
+#endif
+
     FILE* f = fopen(path, "r");
     if (!f) return NULL;
 
@@ -53,7 +66,16 @@ int whisper_load_privkey(const char* nsec_str, const char* nsec_file,
         const char* env_key = getenv("NOSTR_NSEC");
         if (env_key) {
             env_buf = strdup(env_key);
+            if (!env_buf) {
+                fprintf(stderr, "Error: Memory allocation failed\n");
+                return -1;
+            }
             key_str = env_buf;
+#ifndef _WIN32
+            unsetenv("NOSTR_NSEC");
+#else
+            _putenv("NOSTR_NSEC=");
+#endif
         }
     }
 
@@ -131,4 +153,21 @@ int whisper_parse_pubkey(const char* pubkey_str, nostr_key* pubkey) {
     }
 
     return 0;
+}
+
+char* whisper_strip_control_chars(const char* input) {
+    if (!input) return NULL;
+    size_t len = strlen(input);
+    char* output = malloc(len + 1);
+    if (!output) return NULL;
+
+    size_t j = 0;
+    for (size_t i = 0; i < len; i++) {
+        unsigned char c = (unsigned char)input[i];
+        if (c == '\t' || c == '\n' || c >= 0x80 || (c >= 0x20 && c < 0x7F)) {
+            output[j++] = (char)c;
+        }
+    }
+    output[j] = '\0';
+    return output;
 }
