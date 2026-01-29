@@ -83,6 +83,7 @@
             pkgs.secp256k1
             pkgs.libwebsockets
             pkgs.openssl
+            pkgs.notcurses
           ];
 
           buildPhase = ''
@@ -98,9 +99,14 @@
             $CC -Wall -Wextra -O2 -std=c99 -D_DEFAULT_SOURCE \
               -I${libnostrC}/include \
               -c -o util.o util.c
-            $CC -o whisper main.o send.o recv.o util.o \
+            $CC -Wall -Wextra -O2 -std=c99 -D_DEFAULT_SOURCE \
+              -I${libnostrC}/include -I${pkgs.notcurses}/include \
+              -DHAVE_NOTCURSES \
+              -c -o tui.o tui.c
+            $CC -o whisper main.o send.o recv.o util.o tui.o \
               -L${libnostrC}/lib -lnostr \
               -L${noscryptLib}/lib -lnoscrypt \
+              -L${pkgs.notcurses}/lib -lnotcurses-core \
               -lcjson -lsecp256k1 -lwebsockets -lssl -lcrypto -lpthread -lm
           '';
 
@@ -133,6 +139,7 @@
             pkgs.secp256k1
             pkgs.libwebsockets
             pkgs.openssl
+            pkgs.notcurses
             pkgs.pkg-config
           ];
 

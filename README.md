@@ -8,6 +8,9 @@ echo "secret message" | whisper send --to npub1... --keep-key main --relay wss:/
 
 # Receive encrypted DMs
 whisper recv --keep-key main --relay wss://relay.damus.io
+
+# Interactive TUI
+whisper tui --keep-key main --relay wss://relay.damus.io --to npub1...
 ```
 
 ## Install
@@ -85,6 +88,7 @@ whisper - Encrypted Nostr DMs (NIP-17)
 Usage:
   whisper send --to <npub> --relay <url> [key options]
   whisper recv --relay <url> [key options]
+  whisper tui --relay <url> [--to <npub>] [key options]
 
 Key options (in order of priority):
   --keep-key <name>     Use key from keep vault (recommended)
@@ -104,6 +108,21 @@ Recv options:
   --limit <n>           Max messages (0 = stream)
   --json                Output JSON format
   --timeout <ms>        Timeout (default: 5000)
+
+TUI options:
+  --relay <url>         Relay URL
+  --to <npub|hex>       Initial recipient (can change with /to)
+
+TUI commands:
+  /to <npub>            Set recipient
+  /clear                Clear messages
+  /quit                 Exit TUI
+  /help                 Show commands
+
+TUI keys:
+  Enter                 Send message
+  Ctrl+Q                Quit
+  PgUp/PgDn             Scroll messages
 ```
 
 ## Security
@@ -165,6 +184,7 @@ echo "hello" | whisper send --to npub1... --relay wss://relay.damus.io
 - libsecp256k1
 - noscrypt
 - OpenSSL
+- notcurses (optional, for TUI mode)
 
 ### Compile
 
